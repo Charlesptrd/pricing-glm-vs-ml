@@ -1,0 +1,4 @@
+https://scikit-learn.org/stable/auto_examples/linear_model/plot_tweedie_regression_insurance_claims.html
+
+https://www.kaggle.com/code/darkmatternet/glms-for-insurance-pricing-tutorial
+
