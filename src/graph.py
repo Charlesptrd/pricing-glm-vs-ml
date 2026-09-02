@@ -17,24 +17,23 @@ def freq_par_groupe(df, col, bins=None):
     return freq_groupe
 
 
-def plot_freq_par_groupe(df, col, bins=None):
-    freq_groupe = freq_par_groupe(df, col, bins)
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+def plot_freq_par_groupe(df, col, bins=None, ax=None):
+    g = freq_par_groupe(df, col, bins)
 
-    ax1.bar(range(len(freq_groupe)), freq_groupe["exposition"], color="lightsteelblue")
-    ax1.set_ylabel("Exposition (années-police)")
-    ax1.set_xticks(range(len(freq_groupe)))
-    ax1.set_xticklabels([str(i) for i in freq_groupe.index], rotation=45, ha="right")
+    if ax is None:                       # usage isolé
+        fig, ax = plt.subplots(figsize=(10, 6))
 
-    ax2 = ax1.twinx()
-    ax2.plot(range(len(freq_groupe)), freq_groupe["frequence"], "o-", color="crimson")
-    ax2.set_ylabel("Fréquence (sinistres / année-police)")
-    ax2.axhline(
-        df["ClaimNb"].sum() / df["Exposure"].sum(),
-        color="gray", linestyle="--", lw=1,
-    )
+    x = range(len(g))
+    ax.bar(x, g["exposition"], color="lightsteelblue")
+    ax.set_ylabel("Exposition")
+    ax.set_xticks(list(x))
+    ax.set_xticklabels([str(i) for i in g.index], rotation=45, ha="right", fontsize=8)
 
-    plt.title(f"Fréquence de sinistres par {col}")
-    plt.tight_layout()
-    plt.show()
-    return freq_groupe
+    ax2 = ax.twinx()
+    ax2.plot(x, g["frequence"], "o-", color="crimson", ms=4)
+    ax2.set_ylabel("Fréquence")
+    ax2.axhline(df["ClaimNb"].sum() / df["Exposure"].sum(),
+                color="gray", ls="--", lw=1)
+
+    ax.set_title(col)
+    return g
