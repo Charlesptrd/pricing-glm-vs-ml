@@ -1,0 +1,11 @@
+pandas
+numpy
+matplotlib
+scikit-learn
+statsmodels
+lightgbm
+shap
+pyarrow
+fastparquet
+ipykernel
+jupyter
