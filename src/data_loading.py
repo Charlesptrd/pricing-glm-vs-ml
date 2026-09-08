@@ -1,4 +1,5 @@
 from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
 from pathlib import Path
@@ -46,5 +47,18 @@ def load_data():
 
     return freq, sev
 
+
+
+
+def split_train_test_freq(freq:pd.DataFrame, test_size=0.2, random_state=42):
+
+    """
+    Découpe le portefeuille en apprentissage / test.
+    Le découpage est stratifié sur la présence d'au moins 1 sinistre et 
+    déterministe (random_state=42) pour la reproductabilité des résultats et que 
+    ce découpage soit exactement le même pour tous les modèles.
+    """
+
+    return train_test_split(freq, test_size=test_size, random_state=random_state, stratify=(freq["ClaimNb"] > 0))
 
     
