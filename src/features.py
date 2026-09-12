@@ -1,9 +1,15 @@
 import pandas as pd
 import sys
 import numpy as np
+import statsmodels.api as sm
 
-BINS_DRIVAGE = [17, 19, 21, 24, 29, 39, 49, 59, 69, 90]
-LABELS_DRIVAGE = ["18-19", "20-21", "22-24", "25-29", "30-39","40-49", "50-59", "60-69", "70+"]
+
+
+BINS_DRIVAGE_FIN = [17, 19, 21, 24, 29, 39, 49, 59, 69, 90]
+LABELS_DRIVAGE_FIN = ["18-19", "20-21", "22-24", "25-29", "30-39","40-49", "50-59", "60-69", "70+"]
+
+BINS_DRIVAGE_GROSSIER   = [17, 19, 21, 24, 29, 39, 49, 59, 90]
+LABELS_DRIVAGE_GROSSIER = ["18-19", "20-21", "22-24", "25-29", "30-39", "40-49", "50-59", "60+"]
 
 BINS_BM = [49, 50, 60, 75, 100, 350]
 LABELS_BM = ["50", "51-60", "61-75", "76-100", "100+"]
@@ -14,11 +20,21 @@ LABELS_DENSITY = ["very low", "low", "medium", "high", "very high"]
 VEHAGE_BINS = [-1, 0, 1, 4, 10, 20, 31]
 VEHAGE_LABELS = ['0', '1', '2-4', '5-10', '11-20', '21+']
 
+
+
 SEUIL_EXPOSITION = 5000
 
-def preparer(df:pd.DataFrame):
+
+COLONNES_MODELE = ["age_grp", "bm_grp", "vehage_grp", "dens_grp", "VehGas", "VehPower", "VehBrand", "Region"]
+REFERENCES = {"age_grp": "30-39", "bm_grp": "50", "vehage_grp": "5-10", "dens_grp": "medium", "VehGas": "Regular", "VehPower": "6", "VehBrand": "B12", "Region":   "R24"}
+
+
+def preparer(df:pd.DataFrame, decoupage="fin"):
     df = df.copy()
-    df["age_grp"] = pd.cut(df["DrivAge"], bins=BINS_DRIVAGE, labels=LABELS_DRIVAGE)
+    if decoupage=="fin":
+        df["age_grp"] = pd.cut(df["DrivAge"], bins=BINS_DRIVAGE_FIN, labels=LABELS_DRIVAGE_FIN)
+    if decoupage=="grossier":
+        df["age_grp"] = pd.cut(df["DrivAge"], bins=BINS_DRIVAGE_GROSSIER, labels=LABELS_DRIVAGE_GROSSIER)
     df["bm_grp"] = pd.cut(df["BonusMalus"], bins=BINS_BM, labels=LABELS_BM)
     df["log_Density"] = np.log(df["Density"])
     df["dens_grp"] = pd.cut(df["Density"], bins=BINS_DENSITY, labels=LABELS_DENSITY)
@@ -39,8 +55,33 @@ def modalites_frequentes(train:pd.DataFrame, col, seuil=SEUIL_EXPOSITION):
 
 def regrouper(df:pd.DataFrame, col, modalites, autre="Autres"):
     d = df.copy()
+    #Attention on change ici des catégorielles en chaine de caractères.
     d[col] = d[col].astype(str).where(d[col].isin(modalites), autre)
     return d
+
+def matrice_design(df:pd.DataFrame, colonnes=COLONNES_MODELE, references=REFERENCES):
+    d = df[colonnes].copy()
+    for col, ref in references.items():
+
+        #Si on veut inclure des colonnes qui ne sont pas de base inclut, genre Area à la place de dens_grp
+        if col not in d.columns:
+            continue
+
+        # après regrouper(), Region ou VehPower sont des chaines de caractères et non des catégorielles, il faut donc en refaire des catégorielles.
+        if not isinstance(d[col].dtype, pd.CategoricalDtype):
+            d[col] = d[col].astype("category")
+
+        if ref not in d[col].cat.categories:
+            raise ValueError(f"référence '{ref}' absente de {col}.")
+
+
+        #on construit autre avec toutes les catégories dans l'ordre sauf celle de référence qu'on replace en premiere position dans la ligne suivante.
+        autres = [c for c in d[col].cat.categories if c != ref]
+        d[col] = d[col].cat.reorder_categories([ref] + autres)
+
+
+    X = pd.get_dummies(d, drop_first=True, dtype=float)
+    return sm.add_constant(X, has_constant="add")
 
 
 
