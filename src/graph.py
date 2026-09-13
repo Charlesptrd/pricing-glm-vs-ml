@@ -39,3 +39,26 @@ def plot_freq_par_groupe(data_frame, colonnes, bins=None, ax=None, errorbar=Fals
 
     ax.set_title(colonnes)
     return graphique
+
+def plot_facteurs(modele, prefixe, ref="référence", ax=None):
+    
+    # Je suis passé par le paramètre regex et non prefix car sinon cela prenait aussi `vehage` pour la modalité `age`
+    params = modele.params.filter(regex= "^" + prefixe + "_")
+
+    noms = [c.replace(prefixe + "_", "") for c in params.index]
+    noms = [ref] + noms
+    facteurs = np.concatenate([[1.0], np.exp(params.to_numpy())])
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(9, 5))
+
+    x = range(len(noms))
+    couleurs = ["gray"] + ["steelblue"] * (len(noms) - 1)
+    ax.bar(x, facteurs, color=couleurs)
+    ax.axhline(1.0, color="crimson", ls="--", lw=1)
+
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(noms, rotation=45, ha="right", fontsize=8)
+    ax.set_ylabel("Facteur multiplicatif")
+    ax.set_title(prefixe)
+    return
