@@ -4,3 +4,5 @@ https://www.kaggle.com/code/darkmatternet/glms-for-insurance-pricing-tutorial
 
 https://www.kudosai.com/Blog/GLMs-for-PC-Insurance-Pricing-A-Practical-Guide-with-Python
 
+https://medium.com/@1998ameya/a-guide-to-actuarial-price-modeling-claim-frequency-and-severity-modeling-with-glms-f8d33231bc00
+

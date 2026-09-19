@@ -59,29 +59,5 @@ def regrouper(df:pd.DataFrame, col, modalites, autre="Autres"):
     d[col] = d[col].astype(str).where(d[col].isin(modalites), autre)
     return d
 
-def matrice_design(df:pd.DataFrame, colonnes=COLONNES_MODELE, references=REFERENCES):
-    d = df[colonnes].copy()
-    for col, ref in references.items():
-
-        #Si on veut inclure des colonnes qui ne sont pas de base inclut, genre Area à la place de dens_grp
-        if col not in d.columns:
-            continue
-
-        # après regrouper(), Region ou VehPower sont des chaines de caractères et non des catégorielles, il faut donc en refaire des catégorielles.
-        if not isinstance(d[col].dtype, pd.CategoricalDtype):
-            d[col] = d[col].astype("category")
-
-        if ref not in d[col].cat.categories:
-            raise ValueError(f"référence '{ref}' absente de {col}.")
-
-
-        #on construit autre avec toutes les catégories dans l'ordre sauf celle de référence qu'on replace en premiere position dans la ligne suivante.
-        autres = [c for c in d[col].cat.categories if c != ref]
-        d[col] = d[col].cat.reorder_categories([ref] + autres)
-
-
-    X = pd.get_dummies(d, drop_first=True, dtype=float)
-    return sm.add_constant(X, has_constant="add")
-
 
 
