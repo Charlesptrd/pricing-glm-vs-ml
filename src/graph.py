@@ -62,3 +62,17 @@ def plot_facteurs(modele, prefixe, ref="référence", ax=None):
     ax.set_ylabel("Facteur multiplicatif")
     ax.set_title(prefixe)
     return
+
+def plot_exposition_par_modalite(df:pd.DataFrame, colonne):
+    df_agg = df.groupby(colonne)["Exposure"].sum().reset_index()
+    df_agg = df_agg.sort_values(by=colonne)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.bar(df_agg[colonne].astype(str), df_agg["Exposure"],color="gray")
+
+    ax.set_title(f"Exposition totale par {colonne}")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+
+    
+

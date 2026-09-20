@@ -67,49 +67,88 @@ def comparer_modeles_glm(modele_ref, modele_nouveau, alpha = 0.05):
     print("-" * 65)
 
     if action == "AJOUT":
-        # pour un ajout, on veut que le gain soit supérieur aux seuils
+        # On accepte la complexification (H0) si le gain le gain d'information est supérieur aux seuils
         rejeter_h0_test = lr_stat >= seuil_lr
         rejeter_h0_aic = lr_stat >= seuil_aic
         rejeter_h0_bic = lr_stat >= seuil_bic
-        msg_ok = "Rejet de H0 : L'ajout est significatif (Modèle complexe retenu)",
-        msg_ko = "Non-rejet de H0 : L'ajout n'est pas significatif (Modèle simple conservé)"
 
-        print(
-            f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ {msg_ok if rejeter_h0_test else msg_ko}"
-        )
-        print(
-            f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ {msg_ok if rejeter_h0_aic else msg_ko}"
-        )
-        print(
-            f"3. Critère BIC        : Seuil = {seuil_bic:.2f} ➔ {msg_ok if rejeter_h0_bic else msg_ko}"
-        )
+        if rejeter_h0_test:
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ OK Rejet de H0 : L'ajout est significatif.")
+        else:
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ KO Non-rejet de H0 : L'ajout n'est pas significatif.")
+        if rejeter_h0_aic:
+            print(f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ OK Changement validé pour l'AIC.")
+        else:
+            print(f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ KO Changement rejeté pour l'AIC.")
+        if rejeter_h0_bic:
+            print(f"3. Critère BIC        : Seuil = {seuil_bic:.2f} ➔ OK Changement validé pour le BIC.")
+        else:
+            print(f"3. Critère BIC        : Seuil = {seuil_bic:.2f} ➔ KO Changement rejeté pour le BIC.")
 
-    else:  # action == 'RETRAIT_OU_FUSION'
+
+
+    else:  
         # On rejette la simplification (H0) si la perte d'information (LR) dépasse le seuil
         rejeter_h0_test = lr_stat > seuil_lr
         rejeter_h0_aic = lr_stat > seuil_aic
         rejeter_h0_bic = lr_stat > seuil_bic
 
-        msg_ok = "❌ Rejet de H0 : La simplification dégrade trop le modèle (Rester sur le modèle complexe)"
-        msg_ko = "✅ Non-rejet de H0 : La simplification est acceptable (Modèle simplifié conservé par parcimonie)"
+        # Attention le succès de la fusion correspond au NON-REJET de H0 (msg_ko)
 
-        # Attention ici : le "succès" de la fusion correspond au NON-REJET de H0 (msg_ko)
-        print(
-            f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ {msg_ko if not rejeter_h0_test else msg_ok}"
-        )
-        print(
-            f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ {msg_ko if not rejeter_h0_aic else msg_ok}"
-        )
-        print(
-            f"3. Critère BIC        : Seuil = {seuil_bic:.2f} ➔ {msg_ko if not rejeter_h0_bic else msg_ok}"
-        )
+        if rejeter_h0_test:
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ KO Rejet de H0 : La simplification dégrade trop le modèle.")
+        else:
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ OK Non-rejet de H0 : La simplification est acceptable.")
+        if rejeter_h0_aic:
+            print(f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ KO Changement rejeté pour l'AIC.")
+        else:
+            print(f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ OK Changement validé pour l'AIC.")
+        if rejeter_h0_bic:
+            print(f"3. Critère BIC        : Seuil = {seuil_bic:.2f} ➔ KO Changement rejeté pour le BIC.")
+        else:
+            print(f"3. Critère BIC        : Seuil = {seuil_bic:.2f} ➔ OK Changement validé pour le BIC.")
+
+    if action == "AJOUT":
+        return {
+            "lr_stat": lr_stat,
+            "p_value": p_value,
+            "ddl": ddl,
+            "action": action,
+            "valide_test": rejeter_h0_test,
+            "valide_aic": rejeter_h0_aic,
+            "valide_bic": rejeter_h0_bic}
+    else:
+        return {
+                    "lr_stat": lr_stat,
+                    "p_value": p_value,
+                    "ddl": ddl,
+                    "action": action,
+                    "valide_test": not rejeter_h0_test,
+                    "valide_aic": not rejeter_h0_aic,
+                    "valide_bic": not rejeter_h0_bic}
 
 
-    return {
-        "lr_stat": lr_stat,
-        "p_value": p_value,
-        "ddl": ddl,
-        "action": action,
-        "valide_test": rejeter_h0_test,
-        "valide_aic": rejeter_h0_aic,
-        "valide_bic": rejeter_h0_bic}
+
+
+def lift_table(modele, data:pd.DataFrame, n_groupes=10, recalage=1.0):
+
+    d = data.copy()
+    offset = np.log(d["Exposure"])
+    d["mu"] = modele.predict(d, offset=offset) * recalage
+
+    #Calcul des fréquences annualisées prédites 
+    d["prime"] = d["mu"] / d["Exposure"]  
+
+
+    d = d.sort_values("prime") # On les classe de la moins risquée à la plus risquée.
+    cum = d["Exposure"].cumsum() / d["Exposure"].sum() # calcul pour chaque police de la part d'exposition située avant elle
+
+    d["groupe"] = np.minimum((cum * n_groupes).astype(int), n_groupes - 1) # chaque police recoit un numéro de 1 à 9 selon sa part d'exposition situé avant elle
+
+    t = d.groupby("groupe").agg(exposition=("Exposure", "sum"),sinistres=("ClaimNb", "sum"),sinistres_pred=("mu", "sum")) # on regroupe par numéro et on ajoute les variables intéressantes
+
+
+    t["observe"] = t["sinistres"] / t["exposition"] # On calcule la fréquence empirique sur le groupe
+    t["predit"] = t["sinistres_pred"] / t["exposition"] # On calcule la fréquence prédite sur le groupe.
+    t["sigma"] = np.sqrt(t["sinistres"]) / t["exposition"] # Calcule de l'écart type.
+    return t
