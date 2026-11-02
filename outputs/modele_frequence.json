@@ -1,0 +1,10 @@
+{
+  "formule": "ClaimNb ~ C(age_grp2, Treatment('30-39')) + C(bm_grp, Treatment('50')) + C(dens_grp, Treatment('medium')) + C(vehage_grp, Treatment('5-10')) + C(VehGas, Treatment('Regular')) + C(vehpower_grp_2, Treatment('5-6')) + C(VehBrand, Treatment('B12')) + C(Region, Treatment('R24')) + age40p:dense",
+  "famille": "Poisson",
+  "offset": "log(Exposure)",
+  "random_state_split": 42,
+  "alpha_negbin": 2.1933699379658256,
+  "facteur_recalage_negbin": 0.9873544034424423,
+  "gini_test": 0.2796,
+  "deviance_test": 0.31314
+}

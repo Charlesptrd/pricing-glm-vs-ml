@@ -73,9 +73,9 @@ def comparer_modeles_glm(modele_ref, modele_nouveau, alpha = 0.05):
         rejeter_h0_bic = lr_stat >= seuil_bic
 
         if rejeter_h0_test:
-            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ OK Rejet de H0 : L'ajout est significatif.")
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ OK Rejet de H0 : Les données permettent de mettre en évidence que l'ajout de ce/ces coefficient(s) améliorent significativement le modèle.")
         else:
-            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ KO Non-rejet de H0 : L'ajout n'est pas significatif.")
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ KO Non-rejet de H0 : Les donnnées ne permettent pas de mettre en évidence une amélioration significative du modèle par l'ajout de nouveaux coefficients.")
         if rejeter_h0_aic:
             print(f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ OK Changement validé pour l'AIC.")
         else:
@@ -96,9 +96,9 @@ def comparer_modeles_glm(modele_ref, modele_nouveau, alpha = 0.05):
         # Attention le succès de la fusion correspond au NON-REJET de H0 (msg_ko)
 
         if rejeter_h0_test:
-            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ KO Rejet de H0 : La simplification dégrade trop le modèle.")
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ KO Non-rejet de H0 : Les données ne permettent pas de mettre en évidence une amélioration significative du modèle.")
         else:
-            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ OK Non-rejet de H0 : La simplification est acceptable.")
+            print(f"1. Test LR (α={alpha*100}%)   : Seuil = {seuil_lr:.2f} ➔ OK Rejet de H0 : Les données permettent de mettre en évidence que la simplification améliore significativement le modèle.")
         if rejeter_h0_aic:
             print(f"2. Critère AIC        : Seuil = {seuil_aic:.2f} ➔ KO Changement rejeté pour l'AIC.")
         else:
@@ -152,3 +152,19 @@ def lift_table(modele, data:pd.DataFrame, n_groupes=10, recalage=1.0):
     t["predit"] = t["sinistres_pred"] / t["exposition"] # On calcule la fréquence prédite sur le groupe.
     t["sigma"] = np.sqrt(t["sinistres"]) / t["exposition"] # Calcule de l'écart type.
     return t
+
+def gini(modele, data, recalage=1.0):
+    d = data.copy()
+    offset = np.log(d["Exposure"])
+    d["mu"] = modele.predict(d, offset=offset) * recalage
+    d["prime"] = d["mu"] / d["Exposure"]
+
+    d = d.sort_values("prime")
+
+# jusque là, même chose que pour le Lift-Chart
+
+    x = np.concatenate([[0], d["Exposure"].cumsum() / d["Exposure"].sum()]) # diagonale
+    y = np.concatenate([[0], d["ClaimNb"].cumsum() / d["ClaimNb"].sum()]) # courbe 
+
+    gini = 1 - 2 * np.trapezoid(y, x) # on intègre y selon la courbe x (la diagonale) selon la méthode des trapèzes.
+    return x, y, gini

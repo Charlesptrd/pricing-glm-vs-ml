@@ -6,3 +6,5 @@ https://www.kudosai.com/Blog/GLMs-for-PC-Insurance-Pricing-A-Practical-Guide-wit
 
 https://medium.com/@1998ameya/a-guide-to-actuarial-price-modeling-claim-frequency-and-severity-modeling-with-glms-f8d33231bc00
 
+https://www.ressources-actuarielles.net/EXT/ISFA/1226-02.nsf/0/72ce8393e53ce218c1257c39006711ae/$FILE/BELLINA.pdf
+

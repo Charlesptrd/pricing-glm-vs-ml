@@ -28,6 +28,18 @@ SEUIL_EXPOSITION = 5000
 COLONNES_MODELE = ["age_grp", "bm_grp", "vehage_grp", "dens_grp", "VehGas", "VehPower", "VehBrand", "Region"]
 REFERENCES = {"age_grp": "30-39", "bm_grp": "50", "vehage_grp": "5-10", "dens_grp": "medium", "VehGas": "Regular", "VehPower": "6", "VehBrand": "B12", "Region":   "R24"}
 
+# Formules obtenues à l'issue des tests sur le modèle de fréquence dans notebooks/02_glm_frequence.ipynb
+FORMULE_FREQUENCE_FINALE = ("ClaimNb ~ C(age_grp2, Treatment('30-39')) + C(bm_grp, Treatment('50'))"
+        " + C(dens_grp, Treatment('medium')) + C(vehage_grp, Treatment('5-10'))"
+        " + C(VehGas, Treatment('Regular')) + C(vehpower_grp_2, Treatment('5-6'))"
+        " + C(VehBrand, Treatment('B12')) + C(Region, Treatment('R24'))" 
+         " + age40p:dense")
+
+FUSION_AGE = {"50-59": "50+", "60+": "50+"}
+GROUPES_POWER = {"4": "4", "5": "5-6", "6": "5-6", "7": "7", "8": "8", "9": "9-10", "10": "9-10", "11": "11", "12+": "12+"}
+AGES_40P = ["40-49", "50-59", "60+"]
+DENS_ELEVEE = ["high", "very high"]
+
 
 def preparer(df:pd.DataFrame, decoupage="fin"):
     df = df.copy()
@@ -59,5 +71,14 @@ def regrouper(df:pd.DataFrame, col, modalites, autre="Autres"):
     d[col] = d[col].astype(str).where(d[col].isin(modalites), autre)
     return d
 
+def appliquer_decisions_phase1(df:pd.DataFrame):
+    
+    d = df.copy()
+    d["age_grp2"] = d["age_grp"].astype(str).replace(FUSION_AGE)
+    d["vehpower_grp_2"] = d["VehPower"].astype(str).replace(GROUPES_POWER)
+    d["age40p"] = d["age_grp"].astype(str).isin(AGES_40P).astype(int)
+    d["dense"] = d["dens_grp"].astype(str).isin(DENS_ELEVEE).astype(int)
+
+    return d
 
 
