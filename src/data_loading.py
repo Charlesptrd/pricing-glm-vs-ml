@@ -45,6 +45,7 @@ def load_data():
     freq['DrivAge']  = freq['DrivAge'].clip(upper=90)
     freq['VehGas']   = freq['VehGas'].astype(str).str.strip("'")
 
+    sev = sev.loc[sev["IDpol"].isin(freq["IDpol"])].copy()
     return freq, sev
 
 
