@@ -8,23 +8,42 @@ def table_frequence(df, col):
     t["sigma"] = np.sqrt(t["sinistres"]) / t["exposition"]
     return t
 
-def comparer_tranches(df, col):
-    t = table_frequence(df, col)
 
-    f, s = t["frequence"].to_numpy(), t["sigma"].to_numpy()
+def table_severite(df, col, montant="montant_ecrete", forfaits=None):
+    t = df.groupby(col, observed=True)[montant].agg(sinistres="size", cout_moyen="mean", ecart_type="std")
+    t["sigma"] = t["ecart_type"] / np.sqrt(t["sinistres"])
+    t["erreur_relative"] = t["sigma"] / t["cout_moyen"]
+    t["cout_brut"] = df.groupby(col, observed=True)["ClaimAmount"].mean()
+
+    if forfaits is not None:
+        est_forfait = df["ClaimAmount"].round(2).isin(forfaits)
+        t["part_forfaits"] = est_forfait.groupby(df[col], observed=True).mean()
+        t["cout_hors_forfaits"] = df.loc[~est_forfait].groupby(col, observed=True)[montant].mean()
+
+    return t
+
+
+def _ecarts_voisins(t, valeur):
+    v, s = t[valeur].to_numpy(), t["sigma"].to_numpy()
     noms = t.index.to_numpy()
-
-    ecart = np.abs(np.diff(f))
+    ecart = np.abs(np.diff(v))
     sigma_ecart = np.sqrt(s[:-1] ** 2 + s[1:] ** 2)
-
-    res = pd.DataFrame({
+    return pd.DataFrame({
         "paire": [f"{a} / {b}" for a, b in zip(noms[:-1], noms[1:])],
         "ecart": ecart,
         "sigma_ecart": sigma_ecart,
         "rapport": ecart / sigma_ecart,
     })
 
-    return res
+def comparer_tranches(df, col):
+    return _ecarts_voisins(table_frequence(df, col), "frequence")
+
+def comparer_tranches_sev(df, col, montant="montant_ecrete"):
+    return _ecarts_voisins(table_severite(df, col, montant), "cout_moyen")
+
+
+
+
 
 def seuil_test_lr(ddl, alpha=0.05):
     return stats.chi2.ppf(1-alpha, df=ddl).round(2)

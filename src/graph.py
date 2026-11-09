@@ -14,6 +14,8 @@ def freq_par_groupe(data_frame, colonnes, bins=None):
     return freq_groupe
 
 
+
+
 def plot_freq_par_groupe(data_frame, colonnes, bins=None, ax=None, errorbar=False):
     graphique = freq_par_groupe(data_frame, colonnes, bins)
 
@@ -74,5 +76,37 @@ def plot_exposition_par_modalite(df:pd.DataFrame, colonne):
     plt.tight_layout()
     plt.show()
 
-    
+
+def table_severite(df, col, montant="montant_ecrete", forfaits=None):
+    t = df.groupby(col, observed=True)[montant].agg(sinistres="size", cout_moyen="mean", ecart_type="std")
+    t["sigma"] = t["ecart_type"] / np.sqrt(t["sinistres"])
+    t["erreur_relative"] = t["sigma"] / t["cout_moyen"]
+    t["cout_brut"] = df.groupby(col, observed=True)["ClaimAmount"].mean()
+
+    if forfaits is not None:
+        est_forfait = df["ClaimAmount"].round(2).isin(forfaits)
+        t["part_forfaits"] = est_forfait.groupby(df[col], observed=True).mean()
+
+    return t
+
+
+def plot_sev_par_groupe(df, col, montant="montant_ecrete", ax=None):
+    t = table_severite(df, col, montant)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+    x = range(len(t))
+    ax.bar(x, t["sinistres"], color="lightsteelblue")
+    ax.set_ylabel("Nombre de sinistres")
+    ax.set_xticks(list(x))
+    ax.set_xticklabels([str(i) for i in t.index], rotation=45, ha="right", fontsize=8)
+
+    ax2 = ax.twinx()
+    ax2.errorbar(x, t["cout_moyen"], yerr=t["sigma"], fmt="o-", color="crimson", ms=4, capsize=3)
+    ax2.axhline(df[montant].mean(), color="gray", ls="--", lw=1)
+    ax2.set_ylabel("Coût moyen écrêté (€)")
+
+    ax.set_title(col)
+    return t
 
