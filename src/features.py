@@ -41,7 +41,7 @@ AGES_40P = ["40-49", "50-59", "60+"]
 DENS_ELEVEE = ["high", "very high"]
 
 
-def preparer(df:pd.DataFrame, decoupage="fin"):
+def preparer(df:pd.DataFrame, decoupage):
     df = df.copy()
     if decoupage=="fin":
         df["age_grp"] = pd.cut(df["DrivAge"], bins=BINS_DRIVAGE_FIN, labels=LABELS_DRIVAGE_FIN)
