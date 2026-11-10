@@ -41,6 +41,31 @@ AGES_40P = ["40-49", "50-59", "60+"]
 DENS_ELEVEE = ["high", "very high"]
 
 
+TERMES_SEV_BASE = {
+    "age":    "C(age_grp2, Treatment('30-39'))",
+    "bm":     "C(bm_grp, Treatment('50'))",
+    "dens":   "C(dens_grp, Treatment('medium'))",
+    "vehage": "C(vehage_grp, Treatment('5-10'))",
+    "gas":    "C(VehGas, Treatment('Regular'))",
+    "power":  "C(vehpower_grp_2, Treatment('5-6'))",
+    "brand":  "C(VehBrand, Treatment('B12'))",
+    "region": "C(Region, Treatment('R24'))",
+}
+
+def formule_sev(termes):
+    return "montant_ecrete ~ " + " + ".join(termes.values())
+
+def sans(termes, cle):
+    assert cle in termes, f"terme inconnu : {cle}"
+    return {k: v for k, v in termes.items() if k != cle}
+
+def remplacer(termes, cle, terme):
+    assert cle in termes, f"terme inconnu : {cle}"
+    return {**termes, cle: terme}
+
+
+FORMULE_SEVERITE_BASE = formule_sev(TERMES_SEV_BASE)
+
 def preparer(df:pd.DataFrame, decoupage):
     df = df.copy()
     if decoupage=="fin":
@@ -63,7 +88,7 @@ def preparer(df:pd.DataFrame, decoupage):
 def modalites_frequentes(train:pd.DataFrame, col, seuil=SEUIL_EXPOSITION):
     expo = train.groupby(col, observed=True)["Exposure"].sum()
 
-    return expo[expo >= SEUIL_EXPOSITION].index.tolist()
+    return expo[expo >= seuil].index.tolist()
 
 def regrouper(df:pd.DataFrame, col, modalites, autre="Autres"):
     d = df.copy()
@@ -82,3 +107,21 @@ def appliquer_decisions_phase1(df:pd.DataFrame):
     return d
 
 
+def colonnes_sev(df):
+    d = df.copy()
+    d["power_sev"] = d["vehpower_grp_2"].map({
+        "4": "<=11", "5-6": "<=11", "7": "<=11", "8": "<=11",
+        "9-10": "<=11", "11": "<=11", "12+": "12+"})
+    d["vehage_sev"] = d["vehage_grp"].astype(str).map({
+        "0": "0-4", "1": "0-4", "2-4": "0-4",
+        "5-10": "5-10", "11-20": "11+", "21+": "11+"})
+    d["bm_sev3"] = d["bm_grp"].astype(str).map({
+        "50": "50-75", "51-60": "50-75", "61-75": "50-75",
+        "76-100": "76-100", "100+": "100+"})
+    d["bm_sev2"] = d["bm_grp"].astype(str).map({
+        "50": "50-75", "51-60": "50-75", "61-75": "50-75",
+        "76-100": "76+", "100+": "76+"})
+
+    for c in ["power_sev", "vehage_sev", "bm_sev3", "bm_sev2"]:
+        assert d[c].notna().all(), f"{c} : une modalité n'est pas prévue dans le dictionnaire"
+    return d

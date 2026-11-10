@@ -148,6 +148,26 @@ def comparer_modeles_glm(modele_ref, modele_nouveau, alpha = 0.05):
 
 
 
+def comparer_glm_gamma(petit, grand):
+    if petit.nobs != grand.nobs:
+        raise ValueError("les deux modèles ne portent pas sur le même échantillon")
+    k = grand.df_model - petit.df_model
+    if k <= 0:
+        raise ValueError("le premier argument doit être le modèle le plus petit")
+
+    phi = grand.scale
+    lr = (petit.deviance - grand.deviance) / phi
+
+    return pd.Series({
+        "ddl": k,
+        "phi": round(phi, 3),
+        "LR": round(lr, 2),
+        "seuil_test_lr": seuil_test_lr(k),
+        "seuil_aic": seuil_aic_lr(k),
+        "seuil_bic": seuil_bic_lr(k, grand.nobs),
+        "p_value": round(stats.chi2.sf(lr, k), 4),
+    })
+
 
 def lift_table(modele, data:pd.DataFrame, n_groupes=10, recalage=1.0):
 
