@@ -52,8 +52,8 @@ TERMES_SEV_BASE = {
     "region": "C(Region, Treatment('R24'))",
 }
 
-def formule_sev(termes):
-    return "montant_ecrete ~ " + " + ".join(termes.values())
+def formule_sev(termes, reponse="montant_ecrete"):
+    return reponse + " ~ " + " + ".join(termes.values())
 
 def sans(termes, cle):
     assert cle in termes, f"terme inconnu : {cle}"
@@ -109,6 +109,7 @@ def appliquer_decisions_phase1(df:pd.DataFrame):
 
 def colonnes_sev(df):
     d = df.copy()
+
     d["power_sev"] = d["vehpower_grp_2"].map({
         "4": "<=11", "5-6": "<=11", "7": "<=11", "8": "<=11",
         "9-10": "<=11", "11": "<=11", "12+": "12+"})
@@ -121,7 +122,14 @@ def colonnes_sev(df):
     d["bm_sev2"] = d["bm_grp"].astype(str).map({
         "50": "50-75", "51-60": "50-75", "61-75": "50-75",
         "76-100": "76+", "100+": "76+"})
+    d["age_sev"] = d["age_grp2"].map({
+        "18-19": "18-19", "20-21": "20-21", "22-24": "22+", "25-29": "22+",
+        "30-39": "22+", "40-49": "22+", "50+": "22+"})
+    d["age_sev70"] = np.where(
+        d["DrivAge"] >= 70, "70+",
+        d["age_sev"].map({"18-19": "18-19", "20-21": "20-21", "22+": "22-69"}))
+    d["region_sev"] = d["Region"].where(d["Region"].isin(["R91", "R93"]), "reste")
 
-    for c in ["power_sev", "vehage_sev", "bm_sev3", "bm_sev2"]:
+    for c in ["power_sev", "vehage_sev", "bm_sev3", "bm_sev2", "age_sev"]:
         assert d[c].notna().all(), f"{c} : une modalité n'est pas prévue dans le dictionnaire"
     return d
